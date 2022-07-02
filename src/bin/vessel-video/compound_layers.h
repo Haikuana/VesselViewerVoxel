@@ -2,6 +2,8 @@
 
 #include "vessel_mesh.h"
 
+std::pair<int, int> min_pos;
+
 class CompoundLayers
 {
 public:
@@ -18,8 +20,8 @@ public:
 #pragma omp parallel for
 			for (int i = 0; i < NCOMOBO + 1; i++)
 			{
-				if ((i+1) % 2 == 0 && i != NCOMOBO)//half visible
-					continue;
+				//if ((i+1) % 2 == 0 && i != NCOMOBO)//half visible
+				//	continue;
 				int Nslice = SLICE_INTERNAL;
 				if (i == NCOMOBO)
 				{
@@ -444,6 +446,8 @@ void CompoundLayers::load_allimages()
 	}
 	width = max_x - min_x + 1;
 	height = max_y - min_y + 1;
+
+	min_pos = std::pair<int, int>(min_x, min_y);
 
 	std::vector<PixelVessel> vein_whole, artery_whole, micro_whole;
 	for (int k = 0; k < vein_all.size(); k++)

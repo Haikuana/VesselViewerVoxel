@@ -51,6 +51,8 @@ namespace {
 
     using namespace GEO;
 
+	bool btest = false;
+
     /**
      * \brief An application that demonstrates both
      *  GLUP primitives and glup_viewer application
@@ -92,7 +94,7 @@ namespace {
 
 			vein_color_ =  vec4f(0.0f, 0.0f, 0.8f, 1.0f);
 			artery_color_ = vec4f(0.8f, 0.0f, 0.0f, 1.0f);
-			micro_color_ = vec4f(0.8f, 0.62f, 0.13f, 1.0f);
+			micro_color_ = vec4f(0.804f, 0.455f, 0.569f, 1.0f);
 			micro_backcolor_ = vec4f(0.963f, 0.581f, 0.704f, 1.0f);
 
 			// Define the 3d region that we want to display
@@ -220,6 +222,63 @@ namespace {
 			image_hei = IMAGEWIDTHSIZE / width * height;
 			image_sli = IMAGEWIDTHSIZE / width * slice * SCALEVOXEL;
 
+			if (btest) {
+				//my test
+				QImage im_;
+				im_.load("merge.png");
+				int check_value;
+				if (qGray(im_.pixel(0, 0)) == 0)
+				{
+					check_value = 0;
+				}
+				else
+				{
+					check_value = 255;
+				}
+				double voxel_size = 2.0 * IMAGEWIDTHSIZE / width;
+				for (int wid = 0; wid < im_.width(); wid++)
+				{
+					for (int hei = 0; hei < im_.height(); hei++)
+					{
+						int gray_ = qGray(im_.pixel(wid, im_.height() - 1 - hei));
+						if (gray_ != check_value)
+						{
+							PixelVessel v; v.x = wid - min_pos.first; v.y = hei - min_pos.second; v.z = 0;
+							double cen_x = float(v.x) / float(width - 1) * (2.0 * image_wid - voxel_size)
+								- image_wid + voxel_size / 2.0;
+							double cen_y = float(v.y) / float(height - 1) * (2.0 * image_hei - voxel_size)
+								- image_hei + voxel_size / 2.0;
+							v.center[0] = cen_x;
+							v.center[1] = cen_y;
+							mylabels.push_back(v);
+						}
+					}
+				}
+				bchangecolor.resize(micro_faces_size[current_comboslice] / 6, false);
+#pragma omp parallel for
+				for (int i = 0; i < micro_faces_size[current_comboslice] / 6; i++)
+				{
+					double x = micro_faces[current_comboslice][6 * i + 3];
+					double y = micro_faces[current_comboslice][6 * i + 4];
+					Point_2 pt(x, y);
+					bool bc = false;
+					for (int t = 0; t < mylabels.size(); t++)
+					{
+						Point_2 pc(mylabels[t].center[0], mylabels[t].center[1]);
+						if (sqrt((pt - pc).squared_length()) < voxel_size)
+						{
+							bc = true;
+							break;
+						}
+					}
+					if (bc) {
+						bchangecolor[i] = true;
+						//std::cout << "1-";
+					}
+				}
+				std::cout << "match done.\n";
+			}
+
 			set_region_of_interest(-image_wid, -image_hei, -image_sli, image_wid, image_hei, image_sli);
 		}
 
@@ -245,6 +304,7 @@ namespace {
 				}
 				ImGui::EndMainMenuBar();
 			}
+
 			std::string inpath(input_configure_path);
 			if (load_type != -1 && inpath != "")
 			{
@@ -369,7 +429,11 @@ namespace {
 			// Take into account the toggles from the Object pane:
 
 			// Enable/disable individual per-vertex colors.
-			glupDisable(GLUP_VERTEX_COLORS);
+			if (btest) {
+				glupEnable(GLUP_VERTEX_COLORS);
+			}
+			else
+				glupDisable(GLUP_VERTEX_COLORS);
 
 			// There is a global light switch. Note: facet normals are
 			// automatically computed by GLUP, no need to specify
@@ -490,14 +554,24 @@ namespace {
 					glupSetColor4fv(GLUP_FRONT_COLOR, micro_colors);
 					glupSetColor4fv(GLUP_BACK_COLOR, micro_backcolors);
 					glupBegin(GLUP_TRIANGLES);
-					for (int i = 0; i < micro_faces_size[current_comboslice];)
-					{
-						glupNormal3d(micro_faces[current_comboslice][i],
-							micro_faces[current_comboslice][i + 1], micro_faces[current_comboslice][i + 2]);
-						i += 3;
-						glupVertex3d(micro_faces[current_comboslice][i],
-							micro_faces[current_comboslice][i + 1], micro_faces[current_comboslice][i + 2]);
-						i += 3;
+					for (int i = 0; i < micro_faces_size[current_comboslice]/6;i++)
+					{						
+						glupNormal3d(micro_faces[current_comboslice][6*i],
+							micro_faces[current_comboslice][6*i + 1], micro_faces[current_comboslice][6*i + 2]);
+						if (btest) {
+							if (bchangecolor[i])
+							{
+								glupColor3f(1, 1, 1);
+							}
+							else
+							{
+								glupColor3fv(
+									micro_colors
+								);
+							}
+						}
+						glupVertex3d(micro_faces[current_comboslice][6*i+3],
+							micro_faces[current_comboslice][6*i + 4], micro_faces[current_comboslice][6*i + 5]);
 					}
 					glupEnd();
 
@@ -617,6 +691,9 @@ namespace {
 		std::vector<std::vector<PixelVessel>> all_vein_voxels;
 		std::vector<std::vector<PixelVessel>> all_artery_voxels;
 		std::vector<std::vector<PixelVessel>> all_micro_voxels;
+
+		std::vector<PixelVessel> mylabels;
+		std::vector<bool> bchangecolor;
 
 		float**			vein_faces;
 		vector<int>		vein_faces_size;

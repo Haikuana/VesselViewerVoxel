@@ -172,7 +172,7 @@ namespace GEO {
 	phone_screen_ = false;
 	soft_keyboard_visible_ = false;
 
-	style_ = "Light";
+	style_ = "Dark";
     }
 
     Application::~Application() {

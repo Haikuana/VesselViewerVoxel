@@ -1574,7 +1574,7 @@ namespace GEO {
 	    set_default_layout();
 #endif	    
 	}
-	CmdLine::set_arg("gui:style","Light");
+	CmdLine::set_arg("gui:style","Dark");
 	Application::ImGui_initialize();
     }
 

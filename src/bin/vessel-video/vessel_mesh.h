@@ -30,7 +30,7 @@ private:
 		double voxel_size_x = 2.0*IMAGEWIDTHSIZE / width;
 		double voxel_size_y = voxel_size_x;
 		double voxel_size_z = voxel_size_x*SCALEVOXEL;
-
+	
 		for (int i = 0; i < voxels.size(); i++)
 		{
 			PixelVessel p = voxels[i];
